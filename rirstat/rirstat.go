@@ -15,7 +15,7 @@ const timeFmt = "20060102"
 type Header struct {
 	Version   string
 	Registry  string
-	Serial    int
+	Serial    int64
 	Records   int
 	StartDate time.Time
 	EndDate   time.Time
@@ -94,11 +94,11 @@ func parseHeader(cols []string) (*Header, error) {
 
 	hdr.Version = cols[0]
 	hdr.Registry = cols[1]
-	i, err := strconv.ParseInt(cols[2], 10, 32)
+	i, err := strconv.ParseInt(cols[2], 10, 64)
 	if err != nil {
 		return nil, err
 	}
-	hdr.Serial = int(i)
+	hdr.Serial = i
 	i, err = strconv.ParseInt(cols[3], 10, 32)
 	if err != nil {
 		return nil, err
