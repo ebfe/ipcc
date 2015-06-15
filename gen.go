@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/ebfe/ipcc/rirstat"
 )
 
 var registries = []string{"afrinic", "apnic", "arin", "iana", "lacnic", "ripe-ncc"}
@@ -62,7 +64,24 @@ func fetch() error {
 
 func main() {
 	if err := fetch(); err != nil {
-		fmt.Fprintf(os.Stderr, "gen: fetchh error: %s", err)
+		fmt.Fprintf(os.Stderr, "gen: fetch error: %s", err)
 		os.Exit(1)
+	}
+
+	for _, reg := range registries {
+		fname := filename(reg)
+		f, err := os.Open(fname)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "gen: open %s: %s\n", fname, err)
+			os.Exit(1)
+		}
+		defer f.Close()
+
+		hdr, recs, err := rirstat.Parse(f)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "gen: parse %s: %s\n", fname, err)
+			os.Exit(1)
+		}
+		fmt.Println(hdr.Registry, hdr.EndDate.Format("20060-01-02"), hdr.Records, len(recs), "records")
 	}
 }
