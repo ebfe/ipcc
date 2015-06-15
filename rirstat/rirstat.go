@@ -13,7 +13,7 @@ import (
 const timeFmt = "20060102"
 
 type Header struct {
-	Version   int
+	Version   string
 	Registry  string
 	Serial    int
 	Records   int
@@ -92,13 +92,9 @@ func parseHeader(cols []string) (*Header, error) {
 		return nil, errors.New("rirstat: header too short")
 	}
 
-	i, err := strconv.ParseInt(cols[0], 10, 16)
-	if err != nil {
-		return nil, err
-	}
-	hdr.Version = int(i)
+	hdr.Version = cols[0]
 	hdr.Registry = cols[1]
-	i, err = strconv.ParseInt(cols[2], 10, 32)
+	i, err := strconv.ParseInt(cols[2], 10, 32)
 	if err != nil {
 		return nil, err
 	}
