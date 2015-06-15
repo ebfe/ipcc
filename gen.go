@@ -12,15 +12,18 @@ import (
 var registries = []string{"afrinic", "apnic", "arin", "iana", "lacnic", "ripe-ncc"}
 var mirror = "https://ftp.apnic.net/stats"
 
+func filename(reg string) string {
+	ffmt := "delegated-%s-extended-latest"
+	if reg == "iana" {
+		ffmt = "delegated-%s-latest"
+	}
+	return fmt.Sprintf(ffmt, strings.Replace(reg, "-", "", -1))
+}
+
 func fetch() error {
 	for _, reg := range registries {
-		ffmt := "delegated-%s-extended-latest"
-		if reg == "iana" {
-			ffmt = "delegated-%s-latest"
-		}
-		fname := fmt.Sprintf(ffmt, strings.Replace(reg, "-", "", -1))
+		fname := filename(reg)
 
-		fmt.Printf("%s: %s\n", reg, fname)
 		_, err := os.Stat(fname)
 		if err == nil {
 			fmt.Printf("%s: cached\n", reg)
