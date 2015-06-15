@@ -78,7 +78,7 @@ func Parse(r io.Reader) (*Header, []Record, error) {
 }
 
 func parseTime(s string) (time.Time, error) {
-	if s == "00000000" {
+	if s == "00000000" || s == "" {
 		return time.Time{}, nil
 	}
 	return time.Parse(timeFmt, s)
