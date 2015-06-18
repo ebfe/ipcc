@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"net"
 	"net/http"
 	"os"
@@ -21,7 +22,6 @@ import (
 )
 
 var registries = []string{"afrinic", "apnic", "arin", "iana", "lacnic", "ripe-ncc"}
-//var registries = []string{"afrinic"}
 var mirror = "https://ftp.apnic.net/stats"
 
 func filename(reg string) string {
@@ -73,27 +73,27 @@ func fetch() error {
 }
 
 type ipv4block struct {
-	First uint32
-	Last  uint32
-	Cc    [2]byte
+	s  uint32
+	e  uint32
+	cc byte
 }
 
 type ipv6block struct {
-	Prefix uint64
-	Len    byte
-	Cc     [2]byte
+	p  uint64
+	l  byte
+	cc byte
 }
 
 type v4ByAddr []ipv4block
 
 func (ir v4ByAddr) Len() int           { return len(ir) }
-func (ir v4ByAddr) Less(i, j int) bool { return ir[i].First < ir[j].First }
+func (ir v4ByAddr) Less(i, j int) bool { return ir[i].s < ir[j].s }
 func (ir v4ByAddr) Swap(i, j int)      { ir[i], ir[j] = ir[j], ir[i] }
 
 type v6ByAddr []ipv6block
 
 func (ir v6ByAddr) Len() int           { return len(ir) }
-func (ir v6ByAddr) Less(i, j int) bool { return ir[i].Prefix < ir[j].Prefix }
+func (ir v6ByAddr) Less(i, j int) bool { return ir[i].p < ir[j].p }
 func (ir v6ByAddr) Swap(i, j int)      { ir[i], ir[j] = ir[j], ir[i] }
 
 func merge4(ir []ipv4block) []ipv4block {
@@ -101,11 +101,11 @@ func merge4(ir []ipv4block) []ipv4block {
 
 	w := 0
 	for r := 0; r < len(ir); r++ {
-		if ir[r].Cc != ir[w].Cc || ir[w].Last+1 <= ir[r].First {
+		if ir[r].cc != ir[w].cc || ir[w].e+1 <= ir[r].s {
 			w++
 			ir[w] = ir[r]
 		} else {
-			ir[w].Last = ir[r].Last
+			ir[w].e = ir[r].e
 		}
 	}
 	return ir[:w+1]
@@ -113,7 +113,7 @@ func merge4(ir []ipv4block) []ipv4block {
 
 func merge6(ir []ipv6block) []ipv6block {
 	sort.Sort(v6ByAddr(ir))
-	// TODO
+	// TODO maybe
 	return ir
 }
 
@@ -123,6 +123,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	ccmap := make(map[string]int)
+	ccs := []string{}
 	ipv4 := []ipv4block{}
 	ipv6 := []ipv6block{}
 
@@ -144,9 +146,21 @@ func main() {
 
 		for i := range recs {
 			rec := &recs[i]
-			if rec.CC == "ZZ" || rec.CC == "" {
+			cc := strings.ToLower(rec.CC)
+			if cc == "zz" || cc == "" {
 				continue
 			}
+
+			ccidx, ok := ccmap[cc]
+			if !ok {
+				ccidx = len(ccs)
+				ccs = append(ccs, cc)
+				ccmap[cc] = ccidx
+				if ccidx > math.MaxUint8 {
+					panic("cc index too large")
+				}
+			}
+
 			switch rec.Type {
 			case "ipv4":
 				ip := net.ParseIP(rec.Start).To4()
@@ -160,7 +174,7 @@ func main() {
 					fmt.Fprintf(os.Stderr, "gen: invalid length %s: %s\n", rec.Value, err)
 					continue
 				}
-				ipv4 = append(ipv4, ipv4block{First: start, Last: start + uint32(end), Cc: [2]byte{rec.CC[0], rec.CC[1]}})
+				ipv4 = append(ipv4, ipv4block{s: start, e: start + uint32(end), cc: byte(ccidx)})
 			case "ipv6":
 				ip := net.ParseIP(rec.Start)
 				if ip == nil {
@@ -178,7 +192,7 @@ func main() {
 					continue
 				}
 				prefix := binary.BigEndian.Uint64(ip)
-				ipv6 = append(ipv6, ipv6block{Prefix: prefix, Len: length, Cc: [2]byte{rec.CC[0], rec.CC[1]}})
+				ipv6 = append(ipv6, ipv6block{p: prefix, l: length, cc: byte(ccidx)})
 			}
 		}
 	}
@@ -199,17 +213,23 @@ func main() {
 	package main
 
 	type ipv4block struct {
-		First uint32
-		Last  uint32
-		Cc    [2]byte
+		s  uint32
+		e  uint32
+		cc byte
 	}
 
 	type ipv6block struct {
-		Prefix uint64
-		Len    byte
-		Cc     [2]byte
+		p  uint64
+		l  byte
+		cc byte
 	}
 	`)
+
+	buf.WriteString("var ccs = [...]string{\n")
+	for i := range ccs {
+		buf.WriteString(fmt.Sprintf("%q,\n", ccs[i]))
+	}
+	buf.WriteString("}\n")
 
 	buf.WriteString("var ipv4blocks = [...]ipv4block{\n")
 	for _, b := range ipv4 {
