@@ -205,8 +205,6 @@ func main() {
 	ipv6 = merge6(ipv6)
 	fmt.Println(" -> :", len(ipv6))
 
-	//pretty.Print(ipv4)
-	//pretty.Print(ipv6)
 	buf := bytes.NewBuffer(nil)
 	buf.WriteString(
 		`
@@ -227,18 +225,18 @@ func main() {
 
 	buf.WriteString("var ccs = [...]string{\n")
 	for i := range ccs {
-		buf.WriteString(fmt.Sprintf("%q,\n", ccs[i]))
+		fmt.Fprintf(buf, "%q,\n", ccs[i])
 	}
 	buf.WriteString("}\n")
 
 	buf.WriteString("var ipv4blocks = [...]ipv4block{\n")
 	for _, b := range ipv4 {
-		fmt.Fprintf(buf, "%#v,\n", b)
+		fmt.Fprintf(buf, "{0x%x, 0x%x, %d},\n", b.s, b.e, b.cc)
 	}
 	buf.WriteString("}\n")
 	buf.WriteString("var ipv6blocks = [...]ipv6block{\n")
 	for _, b := range ipv6 {
-		fmt.Fprintf(buf, "%#v,\n", b)
+		fmt.Fprintf(buf, "{0x%x, 0x%x, %d},\n", b.p, b.l, b.cc)
 	}
 	buf.WriteString("}\n")
 	src := bytes.Replace(buf.Bytes(), []byte("main.ipv4block{"), []byte("{"), -1)
