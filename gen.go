@@ -169,12 +169,15 @@ func main() {
 					continue
 				}
 				start := binary.BigEndian.Uint32([]byte(ip))
-				end, err := strconv.ParseUint(rec.Value, 10, 32)
+				n, err := strconv.ParseUint(rec.Value, 10, 32)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "gen: invalid length %s: %s\n", rec.Value, err)
 					continue
 				}
-				ipv4 = append(ipv4, ipv4block{s: start, e: start + uint32(end), cc: byte(ccidx)})
+				if n == 0 {
+					continue
+				}
+				ipv4 = append(ipv4, ipv4block{s: start, e: start + uint32(n-1), cc: byte(ccidx)})
 			case "ipv6":
 				ip := net.ParseIP(rec.Start)
 				if ip == nil {
@@ -208,7 +211,7 @@ func main() {
 	buf := bytes.NewBuffer(nil)
 	buf.WriteString(
 		`
-	package main
+	package ipcc
 
 	type ipv4block struct {
 		s  uint32
