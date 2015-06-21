@@ -5,6 +5,8 @@ import (
 	"net"
 )
 
+//go:generate go run gen.go
+
 func lookup4(ip4 net.IP) string {
 	ip := binary.BigEndian.Uint32(ip4)
 	for _, v := range ipv4blocks {
