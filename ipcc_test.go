@@ -126,7 +126,7 @@ func BenchmarkLookupIPv6(b *testing.B) {
 		0xf000, 0xf800, 0xfc00, 0xfe00, 0xfe80, 0xfec0, 0xff00}
 	ip := make([]byte, 16)
 	for i := 0; i < b.N; i++ {
-		pre := prefixes[i % len(prefixes)]
+		pre := prefixes[i%len(prefixes)]
 		binary.LittleEndian.PutUint16(ip[0:], pre)
 		binary.LittleEndian.PutUint32(ip[2:], rand.Uint32())
 		binary.LittleEndian.PutUint32(ip[6:], rand.Uint32())
