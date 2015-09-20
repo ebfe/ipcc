@@ -100,7 +100,7 @@ func merge4(ir []ipv4block) []ipv4block {
 	sort.Sort(v4ByAddr(ir))
 	w := 0
 	for r := 0; r < len(ir); r++ {
-		if ir[r].cc != ir[w].cc || ir[w].e+1 <= ir[r].s {
+		if ir[r].cc != ir[w].cc || ir[w].e+1 < ir[r].s {
 			w++
 			ir[w] = ir[r]
 		} else {
