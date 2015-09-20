@@ -5,6 +5,7 @@ addons:
         apt:
                 packages:
                         - libgeoip-dev
+                        - geoip-database
 
 go:
         - 1.5
