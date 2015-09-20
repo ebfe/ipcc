@@ -136,3 +136,11 @@ func BenchmarkLookupIPv6(b *testing.B) {
 		ipcc.Lookup(ip)
 	}
 }
+
+func ExampleLookup() {
+	ip := net.ParseIP("78.42.0.1")
+	cc := ipcc.Lookup(ip)
+	fmt.Println(cc)
+	// Output:
+	// de
+}
