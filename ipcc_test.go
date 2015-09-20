@@ -1,4 +1,4 @@
-package ipcc
+package ipcc_test
 
 import (
 	"encoding/binary"
@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/abh/geoip"
+	"github.com/ebfe/ipcc"
 )
 
 var g4 *geoip.GeoIP
@@ -47,7 +48,7 @@ func TestMatchGeoIP(t *testing.T) {
 			panic("can't parse ip")
 		}
 
-		ccn := Lookup(ip)
+		ccn := ipcc.Lookup(ip)
 		ccg, _ := g4.GetCountry(ips)
 		ccg = strings.ToLower(ccg)
 
@@ -80,7 +81,7 @@ func TestMatchGeoIPv6(t *testing.T) {
 			panic("can't parse ip")
 		}
 
-		ccn := Lookup(ip)
+		ccn := ipcc.Lookup(ip)
 		ccg, _ := g6.GetCountry_v6(ips)
 		ccg = strings.ToLower(ccg)
 
@@ -107,7 +108,7 @@ func BenchmarkLookupIPv4(b *testing.B) {
 		ip[1] = byte(r >> 16)
 		ip[2] = byte(r >> 8)
 		ip[3] = byte(r)
-		Lookup(ip)
+		ipcc.Lookup(ip)
 	}
 }
 
@@ -132,6 +133,6 @@ func BenchmarkLookupIPv6(b *testing.B) {
 		binary.LittleEndian.PutUint32(ip[6:], rand.Uint32())
 		binary.LittleEndian.PutUint32(ip[10:], rand.Uint32())
 		binary.LittleEndian.PutUint16(ip[14:], uint16(rand.Uint32()))
-		Lookup(ip)
+		ipcc.Lookup(ip)
 	}
 }
