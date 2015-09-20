@@ -1,8 +1,10 @@
 language: go
+sudo: false
 
-before_install:
-        - sudo apt-get update -qq
-        - sudo apt-get install -y libgeoip-dev
+addons:
+        apt:
+                packages:
+                        - libgeoip-dev
 
 go:
         - 1.5
