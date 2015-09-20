@@ -94,7 +94,7 @@ func TestMatchGeoIPv6(t *testing.T) {
 	}
 	r := float32(matches) / N
 	t.Log(r, matches, hits)
-	if r < 0.9 {
+	if r < 0.8 {
 		t.Error("< 90% matches with geoip db")
 	}
 }
