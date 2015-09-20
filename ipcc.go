@@ -1,3 +1,4 @@
+// Package ipcc provides IP to country code mapping
 package ipcc
 
 import (
@@ -36,6 +37,8 @@ func lookup6(ip net.IP) string {
 	return ""
 }
 
+// Lookup returns a 2 letter country code for the given IP or "" if the IP
+// isn't found in the database.
 func Lookup(ip net.IP) string {
 	if ip4 := ip.To4(); ip4 != nil {
 		return lookup4(ip4)
