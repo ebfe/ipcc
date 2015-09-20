@@ -98,7 +98,6 @@ func (ir v6ByAddr) Swap(i, j int)      { ir[i], ir[j] = ir[j], ir[i] }
 
 func merge4(ir []ipv4block) []ipv4block {
 	sort.Sort(v4ByAddr(ir))
-
 	w := 0
 	for r := 0; r < len(ir); r++ {
 		if ir[r].cc != ir[w].cc || ir[w].e+1 <= ir[r].s {
@@ -113,7 +112,6 @@ func merge4(ir []ipv4block) []ipv4block {
 
 func merge6(ir []ipv6block) []ipv6block {
 	sort.Sort(v6ByAddr(ir))
-	// TODO maybe
 	return ir
 }
 
@@ -125,6 +123,7 @@ func main() {
 
 	ccmap := make(map[string]int)
 	ccs := []string{}
+	hdrs := []*rirstat.Header{}
 	ipv4 := []ipv4block{}
 	ipv6 := []ipv6block{}
 
@@ -143,6 +142,7 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Println(hdr.Registry, hdr.EndDate.Format("20060-01-02"), hdr.Records, len(recs), "records")
+		hdrs = append(hdrs, hdr)
 
 		for i := range recs {
 			rec := &recs[i]
@@ -209,9 +209,13 @@ func main() {
 	fmt.Println(" -> :", len(ipv6))
 
 	buf := bytes.NewBuffer(nil)
-	buf.WriteString(
-		`
-	package ipcc
+	buf.WriteString("package ipcc\n")
+
+	for _, hdr := range hdrs {
+		fmt.Fprintf(buf, "// %-8s %s %d\n", hdr.Registry, hdr.EndDate.Format("2006-01-02"), hdr.Serial)
+	}
+
+	buf.WriteString(`
 
 	type ipv4block struct {
 		s  uint32
