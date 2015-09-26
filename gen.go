@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"golang.org/x/tools/imports"
 
@@ -33,43 +34,58 @@ func filename(reg string) string {
 }
 
 func fetch() error {
+	wg := sync.WaitGroup{}
+	wg.Add(len(registries))
+	ch := make(chan error, len(registries))
+
 	for _, reg := range registries {
-		fname := filename(reg)
+		go func(reg string) {
+			defer wg.Done()
+			fname := filename(reg)
 
-		_, err := os.Stat(fname)
-		if err == nil {
-			fmt.Printf("%s: cached\n", reg)
-			continue
-		}
-		if !os.IsNotExist(err) {
-			return err
-		}
+			_, err := os.Stat(fname)
+			if err == nil {
+				fmt.Printf("%s: cached\n", reg)
+				return
+			}
+			if !os.IsNotExist(err) {
+				ch <- err
+				return
+			}
 
-		url := mirror + "/" + reg + "/" + fname
-		fmt.Printf("%s: get %s\n", fname, url)
-		rsp, err := http.Get(url)
-		if err != nil {
-			return err
-		}
-		defer rsp.Body.Close()
+			url := mirror + "/" + reg + "/" + fname
+			fmt.Printf("%s: get %s\n", fname, url)
+			rsp, err := http.Get(url)
+			if err != nil {
+				ch <- err
+				return
+			}
+			defer rsp.Body.Close()
 
-		if rsp.StatusCode != http.StatusOK {
-			return fmt.Errorf("gen: http error: %d %s", rsp.StatusCode, rsp.Status)
-		}
+			if rsp.StatusCode != http.StatusOK {
+				ch <- fmt.Errorf("gen: http error: %d %s", rsp.StatusCode, rsp.Status)
+				return
+			}
 
-		out, err := os.Create(fname)
-		if err != nil {
-			return err
-		}
-		defer out.Close()
+			out, err := os.Create(fname)
+			if err != nil {
+				ch <- err
+				return
+			}
+			defer out.Close()
 
-		n, err := io.Copy(out, rsp.Body)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("%s: %d bytes\n", fname, n)
+			n, err := io.Copy(out, rsp.Body)
+			if err != nil {
+				ch <- err
+				return
+			}
+			fmt.Printf("%s: %d bytes\n", fname, n)
+		}(reg)
 	}
-	return nil
+	wg.Wait()
+	close(ch)
+
+	return <-ch
 }
 
 type ipv4block struct {
